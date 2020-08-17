@@ -59,6 +59,8 @@ client.on("voiceStateUpdate", (oldState, newState) => {
         //Joined channel or switched
         if (newState.channelID !== data[newState.guild.id].wait) return;
 
+        if (newState.guild.me.voice.channel) return;
+
         const waitingChannel = client.channels.cache.get(data[newState.guild.id].wait);
 
         waitingChannel.join().then(connection => {
@@ -102,9 +104,14 @@ function updateInfo(guildID) {
             const supportChannel = client.channels.cache.get(supportChannelID);
 
             let status = "Gesloten";
+            let bezet = false;
             supportChannel.members.forEach(channelMember => {
-                //TODO Check for staff
-                status = "Bezet";
+                if (channelMember.roles.cache.find(role => role.id === data[guildID].staffID)) {
+                    if (!bezet) status = "Vrij";
+                } else {
+                    bezet = true;
+                    status = "Bezet";
+                }
             });
 
             embed.addField(`💬 Support ${id}`, status);
@@ -127,7 +134,7 @@ function play(connection, seek) {
 
     currentSeek = seek;
 
-    musicDispatcher = connection.play("opus" + current + ".mp3", { seek: seek })
+    musicDispatcher = connection.play("opus" + current + ".mp3", { seek: seek, volume: 0.5 })
         .on("finish", () => {
             play(connection, 0);
         }).on("error", error => console.error(error));
