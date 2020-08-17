@@ -6,6 +6,8 @@ const fs = require("fs");
 
 const botconfig = require("./config.json");
 
+const googleTTS = require('google-tts-api');
+
 fs.readdir("./commands/", (err, files) => {
     if (err) return console.error(err);
     files.forEach(file => {
@@ -45,4 +47,112 @@ client.on("message", async message => {
     if (command) command.run(client, message, args);
 });
 
-client.login(botconfig.token);
+client.on("voiceStateUpdate", (oldState, newState) => {
+    const data = JSON.parse(fs.readFileSync("./data.json", "utf8"));
+    if (oldState != null && newState == null) {
+        //Left channel
+        if (oldState.channelID !== data[oldState.guild.id].wait) return;
+
+        if (oldState.channel.members.size - 1 === 0)
+            oldState.channel.leave();
+    } else {
+        //Joined channel or switched
+        if (newState.channelID !== data[newState.guild.id].wait) return;
+
+        const waitingChannel = client.channels.cache.get(data[newState.guild.id].wait);
+
+        waitingChannel.join().then(connection => {
+            play(connection, 0);
+            setInterval(function() {
+                playWachtend(connection);
+            }, 30000);
+        });
+    }
+});
+
+client.on("voiceStateUpdate", (oldState, newState) => {
+    if (oldState != null && newState == null) {
+        //Left channel
+        updateInfo(oldState.guild.id);
+    } else {
+        //Joined channel
+        updateInfo(newState.guild.id);
+    }
+});
+
+function updateInfo(guildID) {
+    const data = JSON.parse(fs.readFileSync("./data.json", "utf8"));
+
+    const channel = client.channels.cache.get(data[guildID].info);
+
+    const waitingChannel = client.channels.cache.get(data[guildID].wait);
+
+    channel.messages.fetch({limit:1}).then(async (messages) => {
+        const message = messages.first();
+
+        const embed = new discord.MessageEmbed()
+            .setTitle("Support Info:")
+            .addField("⏳ Wachtend:", waitingChannel.members.size > 0 ? waitingChannel.members.size - 1 : 0)
+            .setTimestamp(Date.now())
+            .setColor(typeof data[guildID] !== 'undefined' ? data[guildID].embedColor : '')
+            .setFooter("© SBDeveloper - 2020/2021");
+
+        let id = 1;
+        await data[guildID].channels.forEach((supportChannelID) => {
+            const supportChannel = client.channels.cache.get(supportChannelID);
+
+            let status = "Gesloten";
+            supportChannel.members.forEach(channelMember => {
+                //TODO Check for staff
+                status = "Bezet";
+            });
+
+            embed.addField(`💬 Support ${id}`, status);
+
+            id++;
+        });
+
+        message.edit(embed);
+    }).catch(console.error);
+}
+
+let musicDispatcher;
+let currentSeek;
+
+let current;
+function play(connection, seek) {
+    if (seek == 0) {
+        current = Math.floor(Math.random() * (3 - 1 + 1)) + 1;
+    }
+
+    currentSeek = seek;
+
+    musicDispatcher = connection.play("opus" + current + ".mp3", { seek: seek })
+        .on("finish", () => {
+            play(connection, 0);
+        }).on("error", error => console.error(error));
+}
+
+function playWachtend(connection) {
+    let wachtend = connection.channel.members.size - 1;
+
+    let tekst;
+    if (wachtend == 1) {
+        tekst = "Er is op dit moment 1 wachtende. Even geduld aub.";
+    } else {
+        tekst = "Er zijn op dit moment " + wachtend + " wachtenden. Even geduld aub.";
+    }
+
+    googleTTS(tekst, "nl", 1, 10000).then(function(url) {
+        let streamTime = musicDispatcher.streamTime;
+        let streamTimeSec = Number(((streamTime % 60000) / 1000)) + Number(currentSeek);
+
+        connection.play(url).on("finish", function() {
+            play(connection, streamTimeSec);
+        }).on("error", error => console.error(error));
+    }).catch(function (err) {
+        console.error(err.stack);
+    });
+}
+
+client.login(botconfig.token).catch(console.error);
