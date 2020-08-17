@@ -1,0 +1,29 @@
+{
+  "name": "livesupport-public",
+  "version": "1.0.0",
+  "description": "Discord bot om live support aan te bieden.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stijnb1234/LiveSupport.git"
+  },
+  "keywords": [
+    "live",
+    "support",
+    "bot",
+    "discord"
+  ],
+  "author": "SBDeveloper",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/stijnb1234/LiveSupport/issues"
+  },
+  "homepage": "https://github.com/stijnb1234/LiveSupport#readme",
+  "dependencies": {
+    "discord.js": "^12.3.1",
+    "fs": "0.0.1-security"
+  }
+}
