@@ -48,29 +48,42 @@ client.on("message", async message => {
 });
 
 client.on("voiceStateUpdate", (oldState, newState) => {
-    const data = JSON.parse(fs.readFileSync("./data.json", "utf8"));
-    if (oldState != null && newState == null) {
-        //Left channel
-        if (oldState.channelID !== data[oldState.guild.id].wait) return;
-
-        if (oldState.channel.members.size - 1 === 0)
-            oldState.channel.leave();
-    } else {
-        //Joined channel or switched
-        if (newState.channelID !== data[newState.guild.id].wait) return;
-
-        if (newState.guild.me.voice.channel) return;
-
-        const waitingChannel = client.channels.cache.get(data[newState.guild.id].wait);
-
-        waitingChannel.join().then(connection => {
-            play(connection, 0);
-            setInterval(function() {
-                playWachtend(connection);
-            }, 30000);
-        });
+    if (oldState == null && newState != null) {
+        checkJoin(newState);
+    } else if (oldState != null && newState != null) {
+        checkJoin(newState);
+        checkLeft(oldState);
+    } else if (oldState != null && newState == null) {
+        checkLeft(oldState);
     }
 });
+
+function checkJoin(state) {
+    const data = JSON.parse(fs.readFileSync("./data.json", "utf8"));
+
+    if (state.channelID !== data[state.guild.id].wait) return;
+
+    if (state.guild.me.voice.channel) return;
+
+    const waitingChannel = client.channels.cache.get(data[state.guild.id].wait);
+
+    waitingChannel.join().then((connection) => {
+        play(connection, 0);
+        setInterval(function() {
+            playWachtend(connection);
+        }, 30000);
+    });
+}
+
+function checkLeft(state) {
+    const data = JSON.parse(fs.readFileSync("./data.json", "utf8"));
+
+    if (state.channelID !== data[state.guild.id].wait) return;
+
+    if (state.channel.members.size - 1 === 0) {
+        state.channel.leave();
+    }
+}
 
 client.on("voiceStateUpdate", (oldState, newState) => {
     if (oldState != null && newState == null) {
@@ -119,7 +132,7 @@ function updateInfo(guildID) {
             id++;
         });
 
-        message.edit(embed);
+        await message.edit(embed);
     }).catch(console.error);
 }
 
