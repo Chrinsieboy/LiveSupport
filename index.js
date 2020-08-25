@@ -6,11 +6,8 @@ const fs = require("fs");
 
 const botconfig = require("./config.json");
 
-<<<<<<< HEAD
-=======
 const googleTTS = require('google-tts-api');
 
->>>>>>> e734f3c0505a0e32f4a2b5b4cec39a97f4ad089b
 fs.readdir("./commands/", (err, files) => {
     if (err) return console.error(err);
     files.forEach(file => {
@@ -35,10 +32,6 @@ client.on("ready", () => {
 });
 
 client.on("message", async message => {
-<<<<<<< HEAD
-
-=======
->>>>>>> e734f3c0505a0e32f4a2b5b4cec39a97f4ad089b
     if (message.author.bot) return;
 
     if (message.channel.type === "dm") return;
@@ -54,9 +47,6 @@ client.on("message", async message => {
     if (command) command.run(client, message, args);
 });
 
-<<<<<<< HEAD
-client.login(botconfig.token);
-=======
 client.on("voiceStateUpdate", (oldState, newState) => {
     if (oldState == null && newState != null) {
         checkJoin(newState);
@@ -186,4 +176,3 @@ function playWachtend(connection) {
 }
 
 client.login(botconfig.token).catch(console.error);
->>>>>>> e734f3c0505a0e32f4a2b5b4cec39a97f4ad089b
